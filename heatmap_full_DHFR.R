@@ -14,51 +14,70 @@ library(hash) #to store infos for the different tiles
 
 base_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/results/enrich_full_dhfr/'
 
-tile <- "1"
+corr_descr <- 'corrected with counted reads' #'corrected with all reads' #'corrected with WT counts' # 'corrected with all reads' # 'corrected with counted reads'
+corr <- '_corr_complete' #'_corr_full' #'' #'_corr_full' #'_corr_complete'
+#tile <- "5"
 
 #dict storing necessary infos on the 5 different tiles
 ############################
-h <- hash() 
-# set values
-h[["1"]] <- hash()
-h[['1']][['start_pos']] <- 2
-h[['1']][['tile_end']] <- 39
-h[['1']][['WT_seq']] <- c('Val','Gly','Ser','Leu','Asn','Cys','Ile','Val','Ala','Val','Ser','Gln','Asn','Met','Gly','Ile','Gly','Lys',
-  'Asn','Gly','Asp','Leu','Pro','Trp','Pro','Pro','Leu','Arg','Asn','Glu','Phe','Arg','Tyr','Phe','Gln','Arg','Met','Thr')
 
-h[["2"]] <- hash()
-#the mutagenized region is 31 - 77 but we only have read overlap (from fw rv pair) from aa 37 to 72
-h[['2']][['start_pos']] <- 37
-h[['2']][['tile_end']] <- 72
+make_tile_data <- function(){
+  h <- hash() 
+  # set values
+  h[["1"]] <- hash()
+  h[['1']][['start_pos']] <- 2
+  h[['1']][['tile_end']] <- 39
+  h[['1']][['WT_seq']] <- c('Val','Gly','Ser','Leu','Asn','Cys','Ile','Val','Ala','Val','Ser','Gln','Asn','Met','Gly','Ile','Gly','Lys',
+                            'Asn','Gly','Asp','Leu','Pro','Trp','Pro','Pro','Leu','Arg','Asn','Glu','Phe','Arg','Tyr','Phe','Gln','Arg','Met','Thr')
+  
+  h[["2"]] <- hash()
+  #the mutagenized region is 31 - 77 but we only have read overlap (from fw rv pair) from aa 37 to 72
+  h[['2']][['start_pos']] <- 37
+  h[['2']][['tile_end']] <- 72
+  h[['2']][['WT_seq']] <- c('Arg', 'Met', 'Thr', 'Thr', 'Thr', 'Ser', 'Ser', 'Val', 'Glu', 'Gly', 'Lys', 'Gln', 'Asn', 'Leu',
+                            'Val', 'Ile', 'Met', 'Gly', 'Lys', 'Lys', 'Thr', 'Trp', 'Phe', 'Ser', 'Ile', 'Pro', 'Glu', 'Lys', 
+                            'Asn', 'Arg', 'Pro', 'Leu', 'Lys', 'Gly', 'Arg', 'Ile')
+  
+  h[["3"]] <- hash()
+  #the mutagenized region is 75 - 121 but we only have read overlap (from fw rv pair) from aa 81 to 116
+  h[['3']][['start_pos']] <- 81
+  h[['3']][['tile_end']] <- 116
+  h[['3']][['WT_seq']] <- c('Lys', 'Glu', 'Pro', 'Pro', 'Gln', 'Gly', 'Ala', 'His', 'Phe', 'Leu', 'Ser', 'Arg', 'Ser', 'Leu', 'Asp',
+                            'Asp', 'Ala', 'Leu', 'Lys', 'Leu', 'Thr', 'Glu', 'Gln', 'Pro', 'Glu', 'Leu', 'Ala', 'Asn', 'Lys', 'Val',
+                            'Asp', 'Met', 'Val', 'Trp', 'Ile', 'Val' )
+  
+  h[["4"]] <- hash()
+  #the mutagenized region is 119 - 156 but we have read overlap (from fw rv pair) from aa 116 to 159 so I included counting those muts
+  #there should be none if I understand correctly
+  h[['4']][['start_pos']] <- 116
+  h[['4']][['tile_end']] <- 159
+  h[['4']][['WT_seq']] <- c('Val', 'Gly', 'Gly', 'Ser', 'Ser', 'Val', 'Tyr', 'Lys', 'Glu', 'Ala', 'Met', 'Asn', 'His', 'Pro', 'Gly',
+                            'His', 'Leu', 'Lys', 'Leu', 'Phe', 'Val', 'Thr', 'Arg', 'Ile', 'Met', 'Gln', 'Asp', 'Phe', 'Glu', 'Ser',
+                            'Asp', 'Thr', 'Phe', 'Phe', 'Pro', 'Glu', 'Ile', 'Asp', 'Leu', 'Glu', 'Lys', 'Tyr', 'Lys', 'Leu')
+  
+  h[["5"]] <- hash()
+  #the mutagenized region is 153 - 187 but we have read overlap (from fw rv pair) from aa 146 til the stop codon (pos after 187)
+  h[['5']][['start_pos']] <- 146
+  h[['5']][['tile_end']] <- 187
+  h[['5']][['WT_seq']] <- c('Asp', 'Thr', 'Phe', 'Phe', 'Pro', 'Glu', 'Ile', 'Asp', 'Leu', 'Glu', 'Lys', 'Tyr', 'Lys', 'Leu', 'Leu',
+                            'Pro', 'Glu', 'Tyr', 'Pro', 'Gly', 'Val', 'Leu', 'Ser', 'Asp', 'Val', 'Gln', 'Glu', 'Glu', 'Lys', 'Gly',
+                            'Ile', 'Lys', 'Tyr', 'Lys', 'Phe', 'Glu', 'Val', 'Tyr', 'Glu', 'Lys', 'Asn', 'Asp')
+  
+  return(h)
+}
+h <- make_tile_data()
 
-# get values
-h[["1"]]
-h[['1']][['start_pos']]
-h[[tile]][['start_pos']]
+# get values example
+#h[["1"]]
+#h[['1']][['start_pos']]
+#h[[tile]][['start_pos']]
 
 #################################
 
-#position of the first residue
-start_pos <- h[[tile]][['start_pos']]
-#last position
-tile_end <- h[[tile]][['tile_end']]
-pos_WT <- seq(start_pos,tile_end,1)
-
-#this is the WT aa seq, change for different tiles of dhfr
-aa_WT <-  h[[tile]][['WT_seq']]
-
-#order of amino acids for the heatmap
-order_aa <- c('His', 'Lys', 'Arg', 'Asp', 'Glu', 'Cys', 'Met', 'Asn', 'Gln', 'Ser', 'Thr', 'Ala', 
-              'Ile', 'Leu', 'Val', 'Phe', 'Trp', 'Tyr', 'Gly', 'Pro', 'Ter', 'pos_median')
-
-dat <- read.csv(paste0(base_dir,'tile', tile ,'_all_reps/tsv/tile',tile ,'_all_reps_exp/main_synonymous_scores.tsv'), 
-                sep = '\t', header = F,
-                stringsAsFactors = F, skip = 2,
-                col.names = c('var', 'SE', 'epsilon', 'score'))
-
-
 #for including different conditions see same function in script heatmaps_shorter.R
-make_heatmap <- function(min_score=0,max_score=0) {
+make_heatmap <- function(min_score=0,max_score=0, descr='') {
+  
+  
   
   #get the synonymous and WT scores and subset data to only scores for single vars 
   sy_score <- dat[1,'score']
@@ -128,20 +147,31 @@ make_heatmap <- function(min_score=0,max_score=0) {
     geom_tile(data = WT, aes(x = pos_WT, y=aa_WT, fill = dummy), color = 'grey50') + #scale_color_manual(values = c("white")) +
     geom_point(data = WT, aes(x = pos_WT, y=aa_WT), size = 3, color = 'black') +
     
-    #which ticks to draw. Doesn't work properly if I start at 2 because it will just write 2 on the empty 
-    #column it keeps printing in front
-    scale_x_discrete(name ="pos", limits=as.factor(seq(1,tile_end,1))) + ylab('substitution') +
-    #limit plot to from start of the tile to the end
+    #this works but only displays x axis ticks every 10 positions
+    #xlab('pos')+ ylab('substitution') +
+    #which x-axis ticks to draw. It seems I need to use 1 - tile_end as limits, otherwise it just displays no x-axis scale.
+    #the labels and breaks are me trying to get it to display only labels between tile start and tile end, not all the way from 1. 
+    scale_x_discrete(name ="pos", breaks=seq(start_pos,tile_end,1), labels=as.character(seq(start_pos,tile_end,1)), 
+                     limits=as.factor(seq(1,tile_end,1))) + ylab('substitution') +
+    
+    #limit plot to from start of the tile to the end so we cut off all the part from 1 to start_tile
     coord_cartesian(xlim = c(start_pos,tile_end)) +
-    ggtitle(paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1")) + 
+    #ggtitle(paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1")) + 
+    ggtitle(descr) +
     theme(axis.text=element_text(size=16), axis.title=element_text(size=18), legend.text=element_text(size=18), 
           plot.title = element_text(size=22))
+  
+  #debugging
+  #####################
+  #png(filename = paste0(base_dir,'HZ_plots/heatmap_tile',tile,'.test.png'), width = 1400, height = 800)
+  #print(p)
+  #dev.off()
   
   return(p)
   
 }
 
-make_error_heatmap <- function(max_err=0) {
+make_error_heatmap <- function(max_err=0, descr='') {
 
   #get the synonymous and WT scores and subset data to only scores for single vars 
   sy_error <- dat[1,'SE']
@@ -208,12 +238,16 @@ make_error_heatmap <- function(max_err=0) {
     geom_tile(data = WT, aes(x = pos_WT, y=aa_WT, fill = dummy), color = 'grey50') + #scale_color_manual(values = c("white")) +
     geom_point(data = WT, aes(x = pos_WT, y=aa_WT), size = 3, color = 'black') +
     
-    #which ticks to draw. Doesn't work properly if I start at 2 because it will just write 2 on the empty 
-    #column it keeps printing in front
-    scale_x_discrete(name ="pos", limits=as.factor(seq(1,tile_end,1))) + ylab('substitution') +
+    #this works but only displays x axis ticks every 10 positions
+    #xlab('pos')+ ylab('substitution') +
+    #which x-axis ticks to draw. It seems I need to use 1 - tile_end as limits, otherwise it just displays no x-axis scale.
+    #the labels and breaks are me trying to get it to display only labels between tile start and tile end, not all the way from 1. 
+    scale_x_discrete(name ="pos", breaks=seq(start_pos,tile_end,1), labels=as.character(seq(start_pos,tile_end,1)), 
+                     limits=as.factor(seq(1,tile_end,1))) + ylab('substitution') +
     #limit plot to from start of the tile to the end
     coord_cartesian(xlim = c(start_pos,tile_end)) +
-    ggtitle(paste0("MAVE score errors tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1")) + 
+    #ggtitle(paste0("MAVE score errors tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1")) + 
+    ggtitle(descr) +
     theme(axis.text=element_text(size=16), axis.title=element_text(size=18), legend.text=element_text(size=18), 
           plot.title = element_text(size=22))
   
@@ -221,12 +255,96 @@ make_error_heatmap <- function(max_err=0) {
   
 }
 
+#go through all 5 tiles and make heatmaps
+##########################
+for (tile in c('1','2','3','4','5')) {
+  print(c('tile', tile))
+  
+  #position of the first residue
+  start_pos <- h[[tile]][['start_pos']]
+  #last position
+  tile_end <- h[[tile]][['tile_end']]
+  pos_WT <- seq(start_pos,tile_end,1)
+  
+  #this is the WT aa seq, change for different tiles of dhfr
+  aa_WT <-  h[[tile]][['WT_seq']]
+  
+  #order of amino acids for the heatmap
+  #In the last tile there are apparently no early termination single vars so I took that out for tile 5
+  if(tile == '5' | tile == '3' | tile == '4'){
+    order_aa <- c('His', 'Lys', 'Arg', 'Asp', 'Glu', 'Cys', 'Met', 'Asn', 'Gln', 'Ser', 'Thr', 'Ala', 
+                  'Ile', 'Leu', 'Val', 'Phe', 'Trp', 'Tyr', 'Gly', 'Pro', 'pos_median')
+  } else{
+    order_aa <- c('His', 'Lys', 'Arg', 'Asp', 'Glu', 'Cys', 'Met', 'Asn', 'Gln', 'Ser', 'Thr', 'Ala', 
+                  'Ile', 'Leu', 'Val', 'Phe', 'Trp', 'Tyr', 'Gly', 'Pro', 'Ter', 'pos_median')  
+  }
+  
+  #minimum 10 read counts to accept a var as real
+  ##########################
+  dat <- read.csv(paste0(base_dir,'tile', tile ,'_all_reps_minvarcount10',corr,'/tsv/tile',tile ,'_all_reps_exp/main_synonymous_scores.tsv'), 
+                  sep = '\t', header = F,
+                  stringsAsFactors = F, skip = 2,
+                  col.names = c('var', 'SE', 'epsilon', 'score'))
+  
+  #find out max and min scores
+  print('minimum 10 DNA var counts')
+  #run first without args to get the min and max scores
+  make_heatmap()
+  
+  #after knowing the min and max scores for all tiles, we can make heatmaps for all tiles that have the same scale, 
+  #i.e. from max MAVE score across all tiles to min mave score across all tiles
+  
+  png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.minvarcount10', corr,'.png'), width = 1400, height = 800)
+  print(make_heatmap(min_score = -3.0, max_score = 4.0,
+  #print(make_heatmap(min_score = -3.0, max_score = 3.5,
+        descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
+                       "\nonly DNA vars with minimum 10 read counts, ", corr_descr)))
+  dev.off()
 
-png(filename = paste0(base_dir,'HZ_plots/heatmap_tile',tile,'.png'), width = 1400, height = 800)
-print(make_heatmap(min_score = -2.7, max_score = 2.7))
-dev.off()
+  png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.err_own_scale.minvarcount10', corr, '.png'), width = 1400, height = 800)
+  print(make_error_heatmap(descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
+                                          "\nonly DNA vars with minimum 10 read counts, ", corr_descr)))
+  dev.off()
 
-png(filename = paste0(base_dir,'HZ_plots/heatmap_tile',tile,'.err_own_scale.png'), width = 1400, height = 800)
-make_error_heatmap()
-dev.off()
+  png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.err_full_dhfr_scale.minvarcount10',corr,'.png'), width = 1400, height = 800)
+  print(make_error_heatmap(max_err = 1.1, descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
+                                                         "\nonly DNA vars with minimum 10 read counts. Scaled with highest error in ful dhfr MAVE, ",
+                                                         corr_descr)))
+  dev.off()
+  
+  # #using all counts
+  # #####################
+  # dat <- read.csv(paste0(base_dir,'tile', tile ,'_all_reps/tsv/tile',tile ,'_all_reps_exp/main_synonymous_scores.tsv'), 
+  #                 sep = '\t', header = F,
+  #                 stringsAsFactors = F, skip = 2,
+  #                 col.names = c('var', 'SE', 'epsilon', 'score'))
+  # print('All DNA var counts')
+  # #run first without args to get the min and max scores
+  # #make_error_heatmap()
+  # 
+  # png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.png'), width = 1400, height = 800)
+  # print(make_heatmap(min_score = -3, max_score = 4, 
+  #       descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
+  #                      "\nall vars passing quality control, ", corr_descr)))
+  # dev.off()
+  # 
+  # png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.err_own_scale.png'), width = 1400, height = 800)
+  # print(make_error_heatmap(descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
+  #                                         "\nall vars passing quality control, ", corr_descr)))
+  # dev.off()
+  # 
+  # png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.err_full_dhfr_scale.png'), width = 1400, height = 800)
+  # print(make_error_heatmap(max_err = 1.1, descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
+  #                                                        "\nall vars passing quality control. Scaled with highest error in ful dhfr MAVE, "
+  #                                                        , corr_descr)))
+  # dev.off()
+  # 
+}
+    
+
+
+
+
+
+
 

@@ -1,0 +1,621 @@
+
+colors:
+http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/
+http://www.stat.columbia.edu/~tzheng/files/Rcolor.pdf
+
+----------------------
+Several color scales on the same ggplot with ggnewscale package!
+#https://eliocamp.github.io/codigo-r/2018/09/multiple-color-and-fill-scales-with-ggplot2/
+
+see dom_analysis_gnomad_cv_ic.R
+
+use guide = guide_colorbar(direction = 'horizontal', order = 1) to get horizontal legends. Order specifies the order of the different legends amongst each other. Default is 0 which shuffles them in a weird way
+
+Use guide_colorbar for continuous scale and guide_legend otherwise
+https://ggplot2.tidyverse.org/reference/guide_colourbar.html
+https://ggplot2.tidyverse.org/reference/guide_legend.html
+
+p10 <- ggplot(melt(only_human[,c(1,2)], id.vars = 'MSA_pos'), aes(y=variable, x=MSA_pos)) +
+  geom_tile(aes(fill = value), color = "grey50", lwd = 0.3, linetype = 1) + 
+  scale_fill_gradient(name = '', low = "lightsteelblue1", high = "dodgerblue2", na.value = "white", 
+                      guide = guide_colorbar(direction = 'horizontal', order = 1)) +
+  #new_scale_color() +
+  new_scale("fill") +
+  geom_tile(aes(fill = value), data = melt(only_human[,c(1,3)], id.vars = 'MSA_pos'), color = "grey50", lwd = 0.3, linetype = 1) + 
+  scale_fill_gradient(name = "", low = "white", high = "grey30", na.value = "white",
+                      guide = guide_colorbar(direction = 'horizontal', order = 2)) +
+  new_scale("fill") +
+  geom_tile(aes(fill = value),  data = melt(only_human[,c(1,4)], id.vars = 'MSA_pos'), color = "grey50", lwd = 0.3, linetype = 1) + 
+  scale_fill_gradient(name = "", low = "rosybrown1", high = "coral3", na.value = "white",
+                      guide = guide_colorbar(direction = 'horizontal', order = 3),
+                      breaks = seq(1,max(only_human[,4], na.rm = T)), 
+                      labels = seq(1,max(only_human[,4], na.rm = T))) +
+  new_scale("fill") +
+  geom_tile(aes(fill = value), data = melt(only_human[,c(1,5)], id.vars = 'MSA_pos'), color = "grey50", lwd = 0.3, linetype = 1) + 
+  scale_fill_gradient(name = "", low = "darkseagreen1", high = "chartreuse3", na.value = "white",
+                      guide = guide_colorbar(direction = 'horizontal', order = 4),
+                      breaks = seq(1,max(only_human[,4], na.rm = T)), 
+                      labels = seq(1,max(only_human[,4], na.rm = T))) +
+  new_scale("fill") +
+  geom_tile(aes(fill = value),data = melt(only_human[,c(1,6)], id.vars = 'MSA_pos'), color = "grey50", lwd = 0.3, linetype = 1) + 
+  scale_fill_gradient(name = "", low = "lemonchiffon", high = "goldenrod3", na.value = "white",
+                      guide = guide_colorbar(direction = 'horizontal', order = 5)) +
+  
+  
+  #xlab('') + ylab('') +
+  ylab('') +
+  ggtitle(paste0('Domain analysis ', dom, ': only human proteome instances\n106 sequences')) +
+  scale_x_continuous(breaks = seq(0,max(only_human$MSA_pos),by= 5), 
+                     labels = seq(0,max(only_human$MSA_pos),by= 5)) +
+  theme_bw(base_size = 22) +
+  theme(legend.text = element_text(size = 12), axis.text.x = element_text(angle = 90))
+
+
+
+p10
+
+-----------------------
+aes and color picking
+when using aes, the color key word means what to write in the legend, not which color to use. 
+So how can we do that and still choose specific colors?
+The solution is to add scale_colour_manual and then define for each 'level' what the color should be. 
+In the below example I'm plotting score densities for protein variants with 1-4 substituions (color=as.factor(nr_subs)) as well as wt and synonymous scores as vertical and I want those to be black and grey across all plots.
+
+p <- ggplot(dat10, aes(score,color=as.factor(nr_subs))) +
+    geom_density(bw= 0.08) +
+    xlim(-3.5,3.5) + 
+    #use aes to get a legend for the vertical line:
+    geom_vline(aes(xintercept = wt_score, colour='WT score')) +
+    geom_vline(aes(xintercept = syn_score, colour='Synonymous score')) +
+    #according to https://stackoverflow.com/questions/39112735/using-colors-in-aes-function-in-ggplot2 one can use scale_color_manual to choose colors
+    scale_colour_manual(values = c('1'='coral2', '2'= 'steelblue1', '3'='darkolivegreen3', '4'='darkorchid2',"WT score" = "black", "Synonymous score" = "grey50")) +
+
+
+
+-----------------------
+
+divergent coloring on scatter plot:
+
+p3 <- ggplot(single, aes(x=AN_ex,y=AN_g,color = AF_tot)) +
+  geom_point(alpha = 0.8) + 
+  #https://drsimonj.svbtle.com/pretty-scatter-plots-with-ggplot2
+  scale_color_gradient(low = "#0091ff", high = "#f0650e")+
+  theme_bw(base_size = 22) + ggtitle('Seq depth of variants with AF_tot > 1%')
+p3
+
+---------------
+
+ggplot: if you need to use a variable name in the aes, use aes_string:
+
+p1 <- ggplot(dat, aes_string(x=paste0('t',tile, rep, tp),y=nr_subs)) +
+#p1 <- ggplot(dat, aes(x=t1A0,y=nr_subs)) +  #gives the same as the line above
+  geom_point()
+
+
+
+----------------
+rotate anything in plots, mostly labels
+
+theme(axis.text.x = element_text(angle = 90))
+
+-------------
+legend title position, orientation, size
+
+#legend title position: guide. Use guide_colorbar for continuous scale and guide_legend otherwise
+
+legend title orientation/rotation, size: theme
+
+#plot of combined tallies (easier since they should sharethe same legend and scale)
+p_comb <-  ggplot(melt(as.matrix(t_comb)), aes(x=Var1, y=Var2)) +
+  geom_tile(aes(fill = value)) + coord_flip() +
+  scale_fill_gradient(name = "WT aa freq", low = "lightsteelblue1", high = "dodgerblue2", na.value = "grey80") +
+  xlab('WT') + ylab('') +
+  theme_bw(base_size = 18) +
+  theme(legend.text = element_text(size = 8), axis.text.x = element_text(angle = 90), 
+        legend.title = element_text(angle = 90)) +
+  #legend title position. Use guide_colorbar for continuous scale and guide_lgend otherwise
+  guides(fill = guide_colorbar(title.position = "left"))
+          
+
+p_comb  
+
+
+----------
+grid/ border in geom_tile (custom heatmaps)
+Confusingly, the color argument in geom_tile is the border color, so the color of the cell borders! lwd is line width
+
+p_mat <- ggplot(melt(as.matrix(mat)), aes(x=Var1, y=Var2)) +
+  #color is the border color, so the color of the cell borders! lwd is line width
+  geom_tile(aes(fill = value), color = "grey50", lwd = 0.15, linetype = 1) +
+  scale_fill_gradient(name = "Gnomad vars observed", low = "navajowhite1", high = "red", na.value = "white") +
+  ggtitle(paste0('Subst matrix for SH3_1, MSA pos ', pos, '\n',nvars, ' gnomad vars')) +
+  xlab('Variant') + ylab('WT') +
+  #theme_bw(base_size = 18) +
+  theme(legend.position = "bottom", legend.text = element_text(size = 12))
+p_mat
+
+
+-----------------
+drop rows with all NAs
+
+data5 <- data[rowSums(is.na(data)) != ncol(data), ]
+
+drop cols with only NAs
+gnom <- Filter(function(x)!all(is.na(x)), gnom)
+
+------------------
+#plot a matrix with geom_tile and a color scale from white over yellow to red
+
+#matrix with random data:
+#sample 400 values between 1 and 100
+mat <- as.data.frame(matrix(sample(1:100, 400, replace = TRUE), ncol = 20))
+mat
+
+order_AA <- c('G', 'A', 'V', 'L', 'I', 'M', 'F', 'W', 'P', 'S', 'T', 'C', 'Y', 'N', 'Q', 'D', 'E', 'K', 'R', 'H')
+row.names(mat) <- order_AA
+colnames(mat) <- order_AA
+
+p <- ggplot(melt(as.matrix(mat)), aes(x=Var1, y=Var2)) +
+  geom_tile(aes(fill = value)) +
+  scale_fill_gradient2(name = "Nr substitutions", low = "white", high = "red", mid = 'yellow', midpoint = 50)
+
+p
+
+
+---------------------
+#asymmetric color scales (i.e. the mid point is not in the middle of the score range)
+# this might be useful for the mave score heatmaps:
+
+https://stackoverflow.com/questions/11299705/asymmetric-color-distribution-in-scale-gradient2#11301413
+
+library("scales")
+p + scale_fill_gradientn(colours = c("blue","white","red"), 
+                         values = rescale(c(-.1,0,.3)),
+                         guide = "colorbar", limits=c(-.1,.3))
+
+otherwise, try passing midpoint = 0 to scale_fill_gradient2
+
+--------------------------
+Numbers on bar plots:
+https://stackoverflow.com/questions/30057765/histogram-ggplot-show-count-label-for-each-bin-for-each-category
+use stat_count
+survey_nr_isoforms_clinvar_files.R
+
+for bar plots that use stat = "identity" stat_count doesn't work. Use geom_text instead:
+af_vs_domains.R
+p19 <- ggplot(p_mem, aes(x=feature, color=clinsig, y=perc)) +  
+  #these two do the same
+  geom_histogram(stat="identity", position="dodge", fill = "white")+
+  #geom_bar(stat="identity",position="dodge", fill = "white") +
+  theme(legend.position="top") + 
+  ylim(0,100) +
+  #scale_y_continuous()
+  #count all vars
+  ggtitle(paste0('Clinvar status disease associated genes\nn=',length(unique(d_membrane$uniprot)), 
+                 ' proteins, n=', nrow(d_membrane),' variants')) +
+  #trying to label with 'counts', which is what the column in p_mem is called, not a keyword:
+  #https://stackoverflow.com/questions/11653268/adding-labels-to-ggplot-bar-chart
+  geom_text(aes(x=feature, y=perc, ymax=perc, label=counts, vjust = -1), 
+            position = position_dodge(width=1)) +
+  #stat_count(binwidth=1,geom="text", colour="black", aes(label=..count..), size = 8) +
+  scale_colour_manual(
+    values = c("benign" = "chartreuse3", "conflict"= "goldenrod2", "other"="cyan3", "pathogenic"="tomato2", "VUS"="grey50")
+    , na.translate = T, na.value = "grey70") +
+  xlab('Inside pfam domain') + 
+  theme_bw(base_size = 22)
+
+p19
+
+#things that might be useful at one point but look complicated
+https://stackoverflow.com/questions/18518558/label-bar-plot-with-geom-text-in-ggplot
+https://stackoverflow.com/questions/60992750/how-to-add-summary-statistics-in-histogram-plot-using-ggplot2
+
+Nr of occurences on boxplot:
+#https://stackoverflow.com/questions/28846348/add-number-of-observations-per-group-in-ggplot2-boxplot  
+use stat_summary
+af_vs_domains.R
+
+p <- ggplot(mtcars, aes(factor(vs), mpg, colour = factor(am))) +  
+     geom_boxplot() +
+     stat_summary(fun.data = give.n, geom = "text", fun.y = median,
+                  position = position_dodge(width = 0.75))
+p
+
+
+histogram count lables
+example:
+d_disprot <- read.csv(paste0(base_dir,'stats/clinvar_AF_vs_disprot.csv'), sep = ';', comment.char = '#')
+p9 <- ggplot(d_disprot, aes(x=disprot, color=clinsig)) +
+  geom_histogram(stat="count", position="dodge", fill = "white")+
+  theme(legend.position="top") + 
+  ggtitle(paste0('Clinvar status disease associated genes\nn=',length(unique(d_disprot$uniprot)), 
+                 ' proteins, n=', nrow(d_disprot),' variants')) +
+  #this summarizes the number of observations in each X (disprot yes and no), not per rating (color)
+  stat_count(binwidth=1,geom="text", colour="black", aes(label=..count..), size = 8) +
+  xlab('Disordered after disprot') + 
+  theme_bw(base_size = 22)
+
+more on histograms:
+https://ggplot2.tidyverse.org/reference/geom_histogram.html
+stat_bin() is suitable only for continuous x data. If your x data is discrete, you probably want to use stat_count().
+In addition to geom_histogram, you can create a histogram plot by using scale_x_binned() with geom_bar(). This method by default plots tick marks in between each bar.
+bascially histograms are bar charts with binned data
+
+#frequncies in histograms instead of counts:
+ggplot(dt, aes(x = a)) + 
+  geom_histogram(aes(y = stat(count) / sum(count)), bins = 8) +
+  scale_y_continuous(labels = scales::percent)
+  
+https://stackoverflow.com/questions/57430885/relative-frequency-histogram-in-r-ggplot
+
+----------------------
+enforcing on order of rows in the plot (i.e in bar plot order of the bars)
+#https://stackoverflow.com/questions/38131596/ggplot2-geom-bar-how-to-keep-order-of-data-frame
+
+R automatically orders rows. If the type is char (chr) they will be alphabetic. If they are factors they will be ordered by their levels, which you can set explictly, see below
+
+#ordering the bars in a variance explained PCA plot such that the PC with the highest variance comes first (PC1), then PC2, then PC3 ect
+var_Ex <-as.data.frame(summary(cat.pca)[["importance"]]['Proportion of Variance',])
+colnames(var_Ex) <- c('Variance_explained')
+var_Ex$PC <- row.names(var_Ex)
+var_Ex$PC <- factor(var_Ex$PC, levels = var_Ex$PC[order(var_Ex$Variance_explained, decreasing = T)])
+
+
+
+----------------------
+axis
+http://www.sthda.com/english/wiki/ggplot2-axis-ticks-a-guide-to-customize-tick-marks-and-labels
+
+limits decides the order of axis ticks:
+p + scale_x_discrete(name ="Dose (mg)", 
+                    limits=c("2","1","0.5"))
+
+labels names the axis ticks:
+ scale_y_discrete(labels = c('loop','information content', '# clinvar benign','# clinvar pathogenic', '# gaps' , '# gnomad vars'),
+                   limits=c("loop", "info_content","nr_cv_b", "nr_cv_p","nr_gaps","nr_gomad_vars")) +
+
+-------------------------------------
+Adding marginals to scatter plots
+#https://www.r-graph-gallery.com/277-marginal-histogram-for-ggplot2.html this only works for scatter plots
+p21 <- ggMarginal(p2, type="histogram")
+
+----
+
+#plotting marginals next to a heatmap, also good example for arranging plots with egg!
+#https://stackoverflow.com/questions/38856309/r-grid-arrange-marginal-plots-to-ggplot2-heatmap-geom-tile
+
+#example code from SE
+library(gridExtra)
+library(cowplot)
+library(egg)
+library(dplyr)
+
+# generate some data
+df_hm = cbind(
+  expand.grid(
+    rows = sample(letters, 10), 
+    cols = sample(LETTERS, 10)
+  ), 
+  value = rnorm(100)
+)
+
+# plot the heatmap
+gg_hm = df_hm %>% 
+  ggplot(aes(x = rows, y = cols, fill = value)) + 
+  geom_tile() + 
+  theme(legend.position = "bottom")
+
+gg_rows = df_hm %>% 
+  group_by(rows) %>% 
+  summarize(value = mean(value)) %>% 
+  ggplot(aes(x = rows,y = value)) + 
+  geom_bar(stat = "identity", position = "dodge") 
+
+gg_cols = df_hm %>% 
+  group_by(cols) %>% 
+  summarize(value = mean(value)) %>% 
+  ggplot(aes(x = cols, y = value))+ 
+  geom_bar(stat = "identity", position = "dodge") + 
+  coord_flip()
+
+#little blank square in the top right corner
+gg_empty = df_hm %>% 
+  ggplot(aes(x = cols, y = value)) +
+  geom_blank() +
+  theme(axis.text = element_blank(),
+        axis.title = element_blank(),
+        line = element_blank(),
+        panel.background = element_blank())
+
+ggarrange(
+  gg_rows, gg_empty, gg_hm, gg_cols,
+  nrow = 2, ncol = 2, widths = c(3, 1), heights = c(1, 3)
+)
+
+---------------
+
+separate 0 bin on histogram:
+
+#https://stackoverflow.com/questions/24332534/r-hist-function-aggregates-zero-and-1-values-into-one-bin
+hist(...) uses right-closed intervals by default. You can change this using the right=... argument.
+x <- c(0, 1,  2,  3,  4,  5,  7,  8)
+y <- c(85,  7,  3,  4,  6,  1,  2,  1)
+z <- rep(x,times=y)
+
+par(mfrow=c(1,2))
+hist(z,right=T, main="Right closed")
+hist(z,right=F, main="Left Closed")
+
+-------------------
+
+create empty df and fill it
+
+-> ref: af_vs_domains.R
+
+p_dom = data.frame(matrix(nrow=10,ncol=3))
+colnames(p_dom) <- c('feature', 'clinsig', 'perc')
+
+i <- 1
+for (rating in c('benign', 'pathogenic', 'conflict', 'other', 'VUS')) {
+  
+  count_ft = nrow(subset(d_dom, (dom == 'yes') & (clinsig == rating)))
+  count_notft = nrow(subset(d_dom, (dom == 'no') & (clinsig == rating)))
+  count_total = nrow(subset(d_dom, clinsig == rating))
+  perc_ft = count_ft/count_total
+  perc_noft = count_notft/count_total
+  
+  p_dom[i,] = c('yes', rating, perc_ft)
+  p_dom[i+1,] = c('no', rating, perc_noft)
+  i <- i + 2
+}
+p_dom$perc <- as.numeric(p_dom$perc*100)
+
+--------------
+
+assembling a melted df:
+
+ head(plus_avg)
+  MSA_pos avg_69 std_69 median_69 avg_71    std_71 median_71
+1       1    102      0       102   82.0 40.000000       102
+2       2     92      0        92   73.8 36.400000        92
+3       3     78      0        78   80.8  9.703608        77
+4       4     77      0        77   34.6 41.019995         2
+5       5    116      0       116   42.2 46.978293         7
+6       6     72      0        72   75.2  1.600000        76
+
+I want to turn that into:
+
+  MSA_pos group        avg        std
+1       1    69 102.000000  0.0000000
+2       1    71  82.000000 40.0000000
+3      10    69  62.333333 39.1265752
+4      10    71 115.600000  1.6248077
+5      11    69   8.333333  1.2472191
+6      11    71  98.000000  0.6324555
+
+But the group names are part of columns.
+
+#make molten dataframe of just the average values.
+avg_1 <- melt(plus_avg[, c('MSA_pos', 'avg_69', 'avg_71')], id.vars = 'MSA_pos', variable.name = 'group', value.name = 'avg')
+#now, remove the avg_ part from the group column
+avg_1$group <- sub('avg_', '',avg_1$group)
+
+#now add std
+std_1 <- melt(plus_avg[, c('MSA_pos', 'std_69', 'std_71')], id.vars = 'MSA_pos', variable.name = 'group', value.name = 'std')
+std_1$group <- sub('std_', '',std_1$group)
+
+#merge them
+bla2 <- merge(avg_1, std_1, by = c('MSA_pos','group'), all = T)
+
+======================
+
+color:
+putting it inside the aes and with a string creates a label
+
+p <- ggplot(only_human)+
+  geom_line(aes(x=MSA_pos,y=nr_gomad_vars, color = 'gnomad_vars')) +
+  geom_line(aes(x=MSA_pos,y=nr_cv_p, color = 'clinvar patho')) + 
+  geom_line(aes(x=MSA_pos,y=nr_cv_b, color = 'clinvar benign')) +
+  geom_line(aes(x=MSA_pos,y=nr_gaps, color = 'gaps')) +
+  ggtitle('Gnomad + clinvar vars of DHFR_1 and 2 (mitochondrial) aligned')
+
+how you actually do it in ggplot (same starting df):
+p2 <- ggplot(melt(only_human, id.vars = 'MSA_pos'), aes(x=MSA_pos, y=value, color = variable)) +
+  geom_line()
+  
+  
+---------------------------
+label dots in scatter plot:
+
+p2 <- ggplot(plot_obj, aes(x=PC1, y=PC2, color = loop))+
+  geom_point(size=3) +
+  geom_text(label=rownames(plot_obj),
+            nudge_x = 0.25, nudge_y = 0.25, 
+            check_overlap = T, size = 5) +
+  theme_bw(base_size = 22) +
+  ggtitle('PCA on substitution categories of SH3_1 dom per MSA position')
+
+
+
+-----
+more text labels, non overlapping
+library(ggrepel)
+
+p1 <- ggplot(MTX_comp, aes(x=score,y=MTX_score)) +
+  geom_point() + ggtitle('MTX compare scores single variants') +
+  xlab('prev run (ex1 counted differently)') + ylab('new run') +
+  xlim(min(MTX_comp$score,MTX_comp$MTX_score),max(MTX_comp$score,MTX_comp$MTX_score)) +
+  ylim(min(MTX_comp$score,MTX_comp$MTX_score),max(MTX_comp$score,MTX_comp$MTX_score)) +
+  geom_text_repel(aes(label=ifelse(abs(score - MTX_score)>0.3, as.character(var),'')))
+
+----------------------
+PCA plots:
+#plots from https://rpubs.com/sinhrks/plot_pca
+
+#only PC1 VS PC2
+autoplot(cats.pca)
+
+#color by other features in data
+autoplot(cats.pca, data = all_data, colour = 'sse_id', size = 'nr_gaps', label = TRUE, label.size = 3)
+
+#example using autoplot together w ggplot: yes that works too
+p6 <- autoplot(cats.pca, data = all_data, colour = 'sse_id', size = 'nr_gaps') +
+  geom_text_repel(label=rownames(all_data), size = 8) +
+  theme_bw(base_size = 22) +
+  ggtitle('PCA on substitution categories of SH3_1 dom per MSA position')
+
+p6
+
+#the above autoplot is a short hand for:
+#plot_obj <- as.data.frame(cat.pca$x)
+#plot_obj$n_gaps <- scores$nr_gaps
+#plot_obj$sse_id <- c(rep('beta-a',3), rep(NA,2), rep('beta-a',1) , rep(NA,23), rep('beta-b',9), rep(NA,7), rep('beta-c',8), rep(NA,12), rep('beta-d',5), NA)
+#p6 <- ggplot(plot_obj, aes(x=PC1, y=PC2, color = sse_id))+
+#geom_point(aes(size=n_gaps)) +
+#  geom_text_repel(label=rownames(plot_obj), size = 8) +
+#  theme_bw(base_size = 22) +
+#  ggtitle('PCA on substitution categories of SH3_1 dom per MSA position')
+
+#loadings
+p7 <- autoplot(cats.pca, data = all_data, colour = 'sse_id', alpha = 'nr_seqs', size = 3,
+         loadings = TRUE, loadings.colour = 'blue',
+         loadings.label = TRUE, loadings.label.size = 4, loadings.label.colour = 'black') +
+  geom_text_repel(label=rownames(all_data), size = 5) +
+  theme_bw(base_size = 22) +
+  ggtitle('PCA on substitution categories of SH3_1 dom per MSA position')
+
+p7
+
+png(filename = paste0(base_dir, dom, '/plots/PCA_cat_color_by_sse_id_loadings.png'), width = 1000, height = 800)
+p7
+dev.off()
+
+#loadings
+p8 <- autoplot(cats.pca, data = all_data, colour = 'most_common', alpha = 'nr_seqs', size = 3,
+                  loadings = TRUE, loadings.colour = 'blue',
+                  loadings.label = TRUE, loadings.label.size = 4, loadings.label.colour = 'black') +
+  geom_text_repel(label=rownames(all_data), size = 5) +
+  theme_bw(base_size = 22) +
+  ggtitle('PCA on substitution categories of SH3_1 dom per MSA position')
+
+png(filename = paste0(base_dir, dom, '/plots/PCA_cat_color_by_sse_loadings.png'), width = 1000, height = 800)
+p8
+dev.off()
+
+variance explained, also called the scree plot:
+
+#get the variance explained in a variable. You can confirm that this is the same as given by summary(cats.pca)
+#https://cmdlinetips.com/2019/04/introduction-to-pca-with-r-using-prcomp/
+var_explained <- as.data.frame(cats.pca$sdev^2/sum(cats.pca$sdev^2))
+colnames(var_explained) <- c('var_ex')
+var_explained$PC <- rownames(var_explained)
+var_explained$PC <- factor(var_explained$PC, levels = var_explained$PC[order(var_explained$var_ex, decreasing = T)])
+
+p1 <- ggplot(var_explained, aes(y=var_ex,x=PC)) +
+geom_bar(stat="identity")
+
+p1
+  
+---------------
+commandline options in Rscript
+https://www.r-bloggers.com/2015/09/passing-arguments-to-an-r-script-from-command-lines/
+
+1. simple bash style 
+
+#!/usr/bin/env Rscript
+args = commandArgs(trailingOnly=TRUE)
+  
+## program...
+df = read.table(args[1], header=TRUE)
+num_vars = which(sapply(df, class)=="numeric")
+df_out = df[ ,num_vars]
+write.table(df_out, file=args[2], row.names=FALSE)  
+  
+Rscript --vanilla sillyScript.R iris.txt out.txt -> will read file iris.txt (args[1]) and write file out.txt (args[2]) 
+
+----
+2. named options (python style)
+
+#!/usr/bin/env Rscript
+library("optparse")
+ 
+option_list = list(
+  make_option(c("-f", "--file"), type="character", default=NULL, 
+              help="dataset file name", metavar="character"),
+    make_option(c("-o", "--out"), type="character", default="out.txt", 
+              help="output file name [default= %default]", metavar="character")
+); 
+ 
+opt_parser = OptionParser(option_list=option_list);
+opt = parse_args(opt_parser);
+
+#check if options were given 
+if (is.null(opt$file)){
+  print_help(opt_parser)
+  stop("At least one argument must be supplied (input file).n", call.=FALSE)
+}
+
+the vars are addressed with opt$file and opt$out (the name after the two dashes)
+
+----------------------
+
+density plots in ggplot:
+
+x is a vector of the scores/numbers you want to make a density of. The density y is calc automatically by geom_density. 
+Can set some parameters like the bandwidth, see ?geom_density
+
+p2 <- ggplot(new_scores, aes(x=MTX_score_new)) + 
+  geom_density(bw= 0.08) +
+  xlim(-3,3) + 
+  ggtitle(paste0("MXT: single aa substitution MAVE scores.\nFirst sequencing. # vars: ",nrow(MTX_single))) +
+  xlab('Bandwidth = 0.08') +
+  theme_bw(base_size = 20)
+
+several densities in one plot: 
+use 'color' or 'fill' in the aes and then the factor that determines which group a value belongs to (here column 'cut')
+# ggplot(diamonds, aes(depth, fill = cut)) +
+#   geom_density(alpha=0.7) +
+#   xlim(55, 70) +
+#   theme_bw(base_size = 20)
+
+===================
+
+extract from string in R:
+
+https://stackoverflow.com/questions/57438472/using-str-extract-in-r-to-extract-a-number-before-a-substring-with-regex
+non-caputring groups must be look ahead and look behind groups, starting with ?= (after the match you want to extract) or ?<= (before the match)
+
+library(stringr)
+str_extract("17 nights$5 Days", "(\\d)+(?= nights)")
+shopping_list <- c("apples x4", "bag of flour", "bag of sugar", "milk x2")
+str_extract(shopping_list, "\\d")
+
+#working my way towards the regex pattern for getting the alt base
+#pos <- str_extract(single$var, "(?<=c\\.)[0-9]{1,3}(?=[A-Z]\\>[A-Z])")
+#blubb <- str_extract(single$var, "(?<=c\\.)[0-9]{1,3}[A-Z]\\>[A-Z]")
+#bla <- str_extract(single$var, "(?<=c\\.[0-9]{1,3})[A-Z]\\>[A-Z]")
+#bla2 <- str_extract(single$var, "(?<=c\\.[0-9]{1,3}[A-Z])\\>[A-Z]")
+alt_base <- str_extract(single$var, "(?<=c\\.[0-9]{1,3}[A-Z]\\>)[A-Z]")
+
+================
+
+Select Rows Based on Multiple Conditions:
+df[df$var1 == 'value1' & df$var2 > value2, ]
+
+Select Rows Based on Value in List
+df[df$var1 %in% c('value1', 'value2', 'value3'), ]
+
+====================
+error bars
+use geom_errorbar. Need to put y and x errors separately
+
+p <- ggplot(m_match, aes(x=score_4, y=score_5)) +
+  geom_point() +
+  geom_errorbar(aes(ymin=score_5-SE_5, ymax=score_5+SE_5), width=.2, linetype = 3, color = 'grey50') +
+  geom_errorbar(aes(xmin=score_4-SE_4, xmax=score_4+SE_4), width=.2, linetype = 3, color = 'grey50') +
+  xlim(min_score, max_score) + ylim(min_score, max_score) +
+  ggtitle('Vars scored in both tile 1 and tile 2') +
+  #geom_text(aes(label=var),hjust=1,vjust=-1)+
+  theme_bw(base_size = 20) 
+
+
