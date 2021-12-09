@@ -8,14 +8,13 @@ library(ggplot2)
 library(gridExtra)
 library(hash) #to store infos for the different tiles
 
+#For the new full dhfr MAVE data that only has one condition but all 5 tiles. Makes 1 heatmap per tile
 #OBS: change paths to what is applicable for you. You can find all lines where paths are mentioned by searching for 'base_dir'
-#based on heatmap_shorter.R . For the new full dhfr MAVE data that only has one condition but all 5 tiles (should be full DHFR)
-#heatmap making functions from heatmap_shorter.R
 
 base_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/results/enrich_full_dhfr/'
 
-corr_descr <- 'corrected with counted reads' #'corrected with all reads' #'corrected with WT counts' # 'corrected with all reads' # 'corrected with counted reads'
-corr <- '_corr_complete' #'_corr_full' #'' #'_corr_full' #'_corr_complete'
+corr_descr <- 'corrected with synonymous counts' #'corrected with counted reads' #'corrected with WT counts' # 'corrected with all reads' # 'corrected with counted reads'
+corr <- '_corr_sy' #'_corr_complete' #'' #'_corr_full' #'_corr_complete'
 #tile <- "5"
 
 #dict storing necessary infos on the 5 different tiles
@@ -75,9 +74,7 @@ h <- make_tile_data()
 #################################
 
 #for including different conditions see same function in script heatmaps_shorter.R
-make_heatmap <- function(min_score=0,max_score=0, descr='') {
-  
-  
+make_heatmap <- function(dat, start_pos, tile_end, pos_WT, aa_WT, order_aa, min_score=0,max_score=0, descr='', mid_point = 'wt') {
   
   #get the synonymous and WT scores and subset data to only scores for single vars 
   sy_score <- dat[1,'score']
@@ -138,10 +135,6 @@ make_heatmap <- function(min_score=0,max_score=0, descr='') {
     #use this to find automatic limits to the color scale
     #scale_fill_gradient2(name = "MAVE Score", midpoint = 0, low = "#830823", high = "#063264", mid = 'white', 
     #                     limits = c(-max(abs(min(mat, na.rm = T)),abs(max(mat, na.rm = T))),max(abs(min(mat, na.rm = T)),abs(max(mat, na.rm = T))))) +
-    #use this to use the same color scale limits for all heatmaps
-    scale_fill_gradient2(name = "MAVE Score", midpoint = 0, low = "#830823", high = "#063264", mid = 'white', 
-                         limits = c(min_score,max_score)) +
-    
     
     #add WT markers. Lets try drawing black circles
     geom_tile(data = WT, aes(x = pos_WT, y=aa_WT, fill = dummy), color = 'grey50') + #scale_color_manual(values = c("white")) +
@@ -160,6 +153,19 @@ make_heatmap <- function(min_score=0,max_score=0, descr='') {
     ggtitle(descr) +
     theme(axis.text=element_text(size=16), axis.title=element_text(size=18), legend.text=element_text(size=18), 
           plot.title = element_text(size=22))
+  
+  if(mid_point == 'wt'){
+    #use this to use the same color scale limits for all heatmaps
+    p <- p + scale_fill_gradient2(name = "MAVE Score", midpoint = wt_score, low = "#830823", high = "#063264", mid = 'white', 
+                         limits = c(min_score,max_score))
+  } else if(mid_point == 'sy'){
+    #use this to use the same color scale limits for all heatmaps
+    p <- p + scale_fill_gradient2(name = "MAVE Score", midpoint = sy_score, low = "#830823", high = "#063264", mid = 'white', 
+                         limits = c(min_score,max_score)) 
+  } else {
+    p <- p + scale_fill_gradient2(name = "MAVE Score", midpoint = mid_point, low = "#830823", high = "#063264", mid = 'white', 
+                         limits = c(min_score,max_score)) 
+  }
   
   #debugging
   #####################
@@ -257,6 +263,7 @@ make_error_heatmap <- function(max_err=0, descr='') {
 
 #go through all 5 tiles and make heatmaps
 ##########################
+tile <- '2' #for debug
 for (tile in c('1','2','3','4','5')) {
   print(c('tile', tile))
   
@@ -288,57 +295,22 @@ for (tile in c('1','2','3','4','5')) {
   
   #find out max and min scores
   print('minimum 10 DNA var counts')
+  
+  mid_point <- 'wt'
   #run first without args to get the min and max scores
-  make_heatmap()
+  p1 <- make_heatmap(dat = dat, start_pos =  start_pos, tile_end = tile_end, pos_WT =  pos_WT, aa_WT = aa_WT, order_aa = order_aa
+                     , min_score = -3.5, max_score = 4.0, mid_point = mid_point
+                     , descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
+                                    "\nonly DNA vars with minimum 10 read counts, ", corr_descr, ", mid point: ", mid_point))
   
-  #after knowing the min and max scores for all tiles, we can make heatmaps for all tiles that have the same scale, 
-  #i.e. from max MAVE score across all tiles to min mave score across all tiles
+  p1
   
-  png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.minvarcount10', corr,'.png'), width = 1400, height = 800)
-  print(make_heatmap(min_score = -3.0, max_score = 4.0,
-  #print(make_heatmap(min_score = -3.0, max_score = 3.5,
-        descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
-                       "\nonly DNA vars with minimum 10 read counts, ", corr_descr)))
-  dev.off()
-
-  png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.err_own_scale.minvarcount10', corr, '.png'), width = 1400, height = 800)
-  print(make_error_heatmap(descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
-                                          "\nonly DNA vars with minimum 10 read counts, ", corr_descr)))
-  dev.off()
-
-  png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.err_full_dhfr_scale.minvarcount10',corr,'.png'), width = 1400, height = 800)
-  print(make_error_heatmap(max_err = 1.1, descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
-                                                         "\nonly DNA vars with minimum 10 read counts. Scaled with highest error in ful dhfr MAVE, ",
-                                                         corr_descr)))
+  png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.minvarcount10', corr,'.midpoint',mid_point,'.png'), 
+      width = 1400, height = 800)
+  print(p1)
   dev.off()
   
-  # #using all counts
-  # #####################
-  # dat <- read.csv(paste0(base_dir,'tile', tile ,'_all_reps/tsv/tile',tile ,'_all_reps_exp/main_synonymous_scores.tsv'), 
-  #                 sep = '\t', header = F,
-  #                 stringsAsFactors = F, skip = 2,
-  #                 col.names = c('var', 'SE', 'epsilon', 'score'))
-  # print('All DNA var counts')
-  # #run first without args to get the min and max scores
-  # #make_error_heatmap()
-  # 
-  # png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.png'), width = 1400, height = 800)
-  # print(make_heatmap(min_score = -3, max_score = 4, 
-  #       descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
-  #                      "\nall vars passing quality control, ", corr_descr)))
-  # dev.off()
-  # 
-  # png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.err_own_scale.png'), width = 1400, height = 800)
-  # print(make_error_heatmap(descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
-  #                                         "\nall vars passing quality control, ", corr_descr)))
-  # dev.off()
-  # 
-  # png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_tile',tile,'.err_full_dhfr_scale.png'), width = 1400, height = 800)
-  # print(make_error_heatmap(max_err = 1.1, descr = paste0("MAVE scores tile ", tile, ", 0 mismatch allowed, min base qual 1, average read qual 1",
-  #                                                        "\nall vars passing quality control. Scaled with highest error in ful dhfr MAVE, "
-  #                                                        , corr_descr)))
-  # dev.off()
-  # 
+  
 }
     
 

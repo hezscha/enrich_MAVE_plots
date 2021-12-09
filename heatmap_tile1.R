@@ -7,6 +7,7 @@ library(reshape2)
 library(ggplot2)
 library(gridExtra)
 
+#script for making the heatmaps for the pilot seq of tile 1.
 #OBS: change paths to what is applicable for you. You can find all lines where paths are mentioned by searching for 'base_dir'
 base_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/results/enrich/'
 

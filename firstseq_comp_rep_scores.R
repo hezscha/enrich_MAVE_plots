@@ -1,7 +1,9 @@
 library(ggplot2)
 
-#OBS: change paths to what is applicable for you. You can find all lines where paths are mentioned by searching for 'base_dir'
+#compare replicate scores of the pilot sequencing
 #first DHFR tile seq, 4 different conditions: compare score between replicates
+#OBS: change paths to what is applicable for you. You can find all lines where paths are mentioned by searching for 'base_dir'
+
 
 tile <- '1'
 base_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/results/enrich/'

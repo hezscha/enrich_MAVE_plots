@@ -1,10 +1,12 @@
 library(ggplot2)
 library(stringr)
+library(hash)
 
 #to plot the distributions of mave scores, ddE, ddG scores
 #this is done with so called density plots
 
 base_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/results/enrich_full_dhfr/'
+plot_dir <- paste0(base_dir, 'HZ_plots/score_densities/')
 
 #which correction was employed and what should written in the plot headers
 #the correction with the number of WT reads is default. It uses corr <- '' and corr_descr <- 'corrected with WT counts'.
@@ -13,8 +15,8 @@ base_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/results/enrich_fu
 #it uses corr <- '_corr_complete' and corr_descr <- 'corrected with counted reads' . The corresponding enrich parameter is 'complete'
 #There is also correction with the total number of reads. It gives very similar results to correcting with counted reads.
 
-corr_descr <- 'corrected with counted reads' #'corrected with WT counts' # 'corrected with all reads' # 'corrected with counted reads'
-corr <- '_corr_complete' #'' #'_corr_full' #'_corr_complete'
+corr_descr <- 'corrected with synonymous counts' #'corrected with counted reads' #'corrected with WT counts' # 'corrected with all reads' # 'corrected with counted reads'
+corr <- '_corr_sy' #'_corr_complete' #'' #'_corr_full' #'_corr_complete'
 
 #Store infos on the location and WT seq of each tile in a hash (dictionary) 
 make_tile_data <- function(){
@@ -83,7 +85,7 @@ for (tile in c('1','2','3','4','5')) {
     theme_bw(base_size = 20) + theme(legend.position="bottom")
   p2
   
-  png(filename = paste0(base_dir,'HZ_plots/score_densities/error_tile',tile,'.png'),width = 800, height = 600)
+  png(filename = paste0(plot_dir,'error_tile',tile,'.png'),width = 800, height = 600)
   print(p2)
   dev.off()
 
@@ -114,7 +116,7 @@ p1 <- ggplot(dat_all, aes(SE,fill=as.factor(tile))) +
   theme_bw(base_size = 20) + theme(legend.position="bottom")
 
 p1
-png(filename = paste0(base_dir,'HZ_plots/score_densities/alltiles.fill.error.png'),width = 800, height = 600)
+png(filename = paste0(plot_dir,'alltiles.fill.error.png'),width = 800, height = 600)
 print(p1)
 dev.off()
 
@@ -125,7 +127,7 @@ p2 <- ggplot(dat_all, aes(SE,color=as.factor(tile))) +
   theme_bw(base_size = 20) + theme(legend.position="bottom")
 
 p2
-png(filename = paste0(base_dir,'HZ_plots/score_densities/alltiles.error.png'),width = 800, height = 600)
+png(filename = paste0(plot_dir,'alltiles.error.png'),width = 800, height = 600)
 print(p2)
 dev.off()
 
@@ -153,7 +155,7 @@ for (tile in c('1','2','3','4','5')) {
     xlab('Bandwidth = 0.08') +
     theme_bw(base_size = 20)
   
-  png(filename = paste0(base_dir,'HZ_plots/score_densities/tile',tile,'.ddG.png'),width = 800, height = 550)
+  png(filename = paste0(plot_dir,'tile',tile,'.ddG.png'),width = 800, height = 550)
   print(p)
   dev.off()
   
@@ -165,7 +167,7 @@ for (tile in c('1','2','3','4','5')) {
     xlab('Bandwidth = 0.08') +
     theme_bw(base_size = 20)
   
-  png(filename = paste0(base_dir,'HZ_plots/score_densities/tile',tile,'.ddE.png'),width = 800, height = 550)
+  png(filename = paste0(plot_dir,'tile',tile,'.ddE.png'),width = 800, height = 550)
   print(p)
   dev.off()
 
@@ -188,7 +190,7 @@ p <- ggplot(ddG, aes(Rosetta_ddg_score,color=as.factor(tile))) +
   theme_bw(base_size = 20) + theme(legend.position="bottom")
 
 p
-png(filename = paste0(base_dir,'HZ_plots/score_densities/alltiles.ddG.png'),width = 800, height = 600)
+png(filename = paste0(plot_dir,'alltiles.ddG.png'),width = 800, height = 600)
 print(p)
 dev.off()
 
@@ -200,7 +202,7 @@ p2 <- ggplot(ddG, aes(Rosetta_ddg_score,fill=as.factor(tile))) +
   theme_bw(base_size = 20) + theme(legend.position="bottom")
 
 p2
-png(filename = paste0(base_dir,'HZ_plots/score_densities/alltiles.fill.ddG.png'),width = 800, height = 600)
+png(filename = paste0(plot_dir,'alltiles.fill.ddG.png'),width = 800, height = 600)
 print(p2)
 dev.off()
 
@@ -210,7 +212,7 @@ ddE$tile <- ifelse(ddE$aa_pos >= h[['1']][['start_pos']] &  ddE$aa_pos <= h[['1'
                    ifelse(ddE$aa_pos >= h[['2']][['start_pos']] &  ddE$aa_pos <= h[['2']][['tile_end']], 'tile2', 
                           ifelse(ddE$aa_pos >= h[['3']][['start_pos']] &  ddE$aa_pos <= h[['3']][['tile_end']], 'tile3',
                                  ifelse(ddE$aa_pos >= h[['4']][['start_pos']] &  ddE$aa_pos <= h[['4']][['tile_end']], 'tile4', 'tile5'))))
-
+  
 ddE <- ddE[!is.na(ddE$tile),]
 
 p <- ggplot(ddE, aes(gemme_score,color=as.factor(tile))) +
@@ -220,7 +222,7 @@ p <- ggplot(ddE, aes(gemme_score,color=as.factor(tile))) +
   theme_bw(base_size = 20) + theme(legend.position="bottom")
 
 p
-png(filename = paste0(base_dir,'HZ_plots/score_densities/alltiles.ddE.png'),width = 800, height = 600)
+png(filename = paste0(plot_dir,'alltiles.ddE.png'),width = 800, height = 600)
 print(p)
 dev.off()
 
@@ -231,7 +233,7 @@ p2 <- ggplot(ddE, aes(gemme_score,fill=as.factor(tile))) +
   theme_bw(base_size = 20) + theme(legend.position="bottom")
 
 p2
-png(filename = paste0(base_dir,'HZ_plots/score_densities/alltiles.fill.ddE.png'),width = 800, height = 600)
+png(filename = paste0(plot_dir,'alltiles.fill.ddE.png'),width = 800, height = 600)
 print(p2)
 dev.off()
 
@@ -307,9 +309,9 @@ for (tile in c('1','2','3','4','5')) {
     xlab('Bandwidth = 0.08') +
     theme_bw(base_size = 18)
   
-  #p #look at plot for debugging
+  p #look at plot for debugging
   
-  png(filename = paste0(base_dir,'HZ_plots/score_densities/tile',tile,'.perNrMuts.minvarcount10',corr,'.png'),width = 800, height = 550)
+  png(filename = paste0(plot_dir,'tile',tile,'.perNrMuts.minvarcount10',corr,'.png'),width = 800, height = 550)
   print(p)
   dev.off()
   
@@ -343,7 +345,7 @@ p <- ggplot(MTX_single, aes(x=MTX_score_old)) +
   xlab('Bandwidth = 0.08') +
   theme_bw(base_size = 20)
 
-png(filename = paste0(base_dir,'HZ_plots/score_densities/pilot_seq_MTX_single_vars.png'),width = 800, height = 550)
+png(filename = paste0(plot_dir,'pilot_seq_MTX_single_vars.png'),width = 800, height = 550)
 p
 dev.off()
 
