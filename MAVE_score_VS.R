@@ -10,7 +10,7 @@ library(gridExtra)
 library(cowplot)
 library(egg)
 
-#plot average or individual MAVE score by position against various things including ddsp accessible surface area
+#plot average or indiv MAVE score by position against various things including ddsp accessible surface area
 
 base_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/results/enrich_full_dhfr/'
 data_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/data/'
