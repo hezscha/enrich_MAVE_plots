@@ -7,16 +7,98 @@ library(reshape2)
 library(ggplot2)
 library(gridExtra)
 library(hash) #to store infos for the different tiles
+library(egg)
 
-#heatmap of MAVE scores full DHFR seq all tiles together. data from prep_MAVE_data.R
+#heatmap of MAVE scores full DHFR seq all tiles together
 base_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/results/enrich_full_dhfr/'
+data_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/data/'
 
 corr_descr <- 'corrected with synonymous counts' 
 corr <- '_corr_sy'
 
+#load prepared data
+########################
+
+all_df <- read.csv(paste0(base_dir, 'combined_R_dataframes/', 'all_tile_scores_long.csv'), 
+                   sep = ',')
+
+#all_df including the vars only scored in two selections instead of 3
+all_df_new <- read.csv(paste0(base_dir, 'combined_R_dataframes/', 'all_tile_scores_long_plus2sels.csv'), 
+                   sep = ',')
+
+#load distance data
+########################
+mtx_dist <- read.csv(paste0(data_dir,'1u72_dist_to_MTX.dat'), 
+                     sep = '\t', header = F,
+                     col.names = c('pos_raw','chain', 'WTres', 'MTXdist'))
+
+#put in correct position starting from 2
+mtx_dist$pos <- mtx_dist$pos_raw+1
+
+#remove distances of waters (empty residue field)
+#mtx_dist <- mtx_dist[complete.cases(mtx_dist),]
+mtx_dist <- mtx_dist[mtx_dist$WTres != '',]
+#mtx_dist$molecule <- rep('MTX', nrow(mtx_dist))
+
+nadph_dist <- read.csv(paste0(data_dir,'1u72_dist_to_NDP.dat'), 
+                       sep = '\t', header = F,
+                       col.names = c('pos_raw','chain', 'WTres', 'NADPHdist'))
+
+#put in correct position starting from 2
+nadph_dist$pos <- nadph_dist$pos_raw+1
+
+#remove distances of waters (empty residue field)
+#nadph_dist <- nadph_dist[complete.cases(nadph_dist),]
+nadph_dist <- nadph_dist[nadph_dist$WTres != '',]
+#nadph_dist$molecule <- rep('NADPH', nrow(nadph_dist))
+
+#adding secondary structure elements
+###############################
+
+dssp_dat <- read.csv(paste0(data_dir,'prism_dssp_DHFR_P00374_1u72_parsed.txt'), 
+                     sep = ' ', header = T, comment.char = '#')
+dssp_dat$pos <- seq(start_pos,tile_end)
+#do I need this in order to plot???
+dssp_dat$y <- rep(1,nrow(dssp_dat))
+
+#define the WT to mark in the heatmap
+####################################
+#position of the first residue
+start_pos <- 2
+#last position
+tile_end <- 187
+pos_WT <- seq(start_pos,tile_end,1)
+
+#this is the complete WT aa seq
+          #tile 1: 2 .. 36
+aa_WT <- c('Val','Gly','Ser','Leu','Asn','Cys','Ile','Val','Ala','Val','Ser','Gln','Asn','Met','Gly','Ile','Gly','Lys',
+           'Asn','Gly','Asp','Leu','Pro','Trp','Pro','Pro','Leu','Arg','Asn','Glu','Phe','Arg','Tyr','Phe','Gln',
+           #tile 2: 37 .. 72
+           'Arg', 'Met', 'Thr', 'Thr', 'Thr', 'Ser', 'Ser', 'Val', 'Glu', 'Gly', 'Lys', 'Gln', 'Asn', 'Leu',
+           'Val', 'Ile', 'Met', 'Gly', 'Lys', 'Lys', 'Thr', 'Trp', 'Phe', 'Ser', 'Ile', 'Pro', 'Glu', 'Lys',
+           'Asn', 'Arg', 'Pro', 'Leu', 'Lys', 'Gly', 'Arg', 'Ile',
+           #gap from 73 .. 80
+           'Asn', 'Leu', 'Val', 'Leu', 'Ser', 'Arg', 'Glu', 'Leu',
+           #tile 3: 81 .. 116
+           'Lys', 'Glu', 'Pro', 'Pro', 'Gln', 'Gly', 'Ala', 'His', 'Phe', 'Leu', 'Ser', 'Arg', 'Ser', 'Leu', 'Asp',
+           'Asp', 'Ala', 'Leu', 'Lys', 'Leu', 'Thr', 'Glu', 'Gln', 'Pro', 'Glu', 'Leu', 'Ala', 'Asn', 'Lys', 'Val',
+           'Asp', 'Met', 'Val', 'Trp', 'Ile', 'Val',
+           #gap from 117 .. 118
+           'Gly', 'Gly',
+           #tile 4: 119 .. 152
+           'Ser', 'Ser', 'Val', 'Tyr', 'Lys', 'Glu', 'Ala', 'Met', 'Asn', 'His', 'Pro', 'Gly',
+           'His', 'Leu', 'Lys', 'Leu', 'Phe', 'Val', 'Thr', 'Arg', 'Ile', 'Met', 'Gln', 'Asp', 'Phe', 'Glu', 'Ser',
+           'Asp', 'Thr', 'Phe', 'Phe', 'Pro', 'Glu', 'Ile', 'Asp', 'Leu', 'Glu', 'Lys',
+           #tile 5: 153 .. 187
+           'Tyr', 'Lys', 'Leu', 'Leu',
+           'Pro', 'Glu', 'Tyr', 'Pro', 'Gly', 'Val', 'Leu', 'Ser', 'Asp', 'Val', 'Gln', 'Glu', 'Glu', 'Lys', 'Gly',
+           'Ile', 'Lys', 'Tyr', 'Lys', 'Phe', 'Glu', 'Val', 'Tyr', 'Glu', 'Lys', 'Asn', 'Asp'
+           )
+
+
 #make heatmap function
 #########################
-make_heatmap <- function(d, start_pos, tile_end, pos_WT, aa_WT, min_score=0,max_score=0, descr='') {
+make_heatmap <- function(d, start_pos, tile_end, pos_WT, aa_WT, min_score=0,max_score=0, descr='', x_axis = T) {
   
   order_aa <- c('His', 'Lys', 'Arg', 'Asp', 'Glu', 'Cys', 'Met', 'Asn', 'Gln', 'Ser', 'Thr', 'Ala', 
                 'Ile', 'Leu', 'Val', 'Phe', 'Trp', 'Tyr', 'Gly', 'Pro', 'Ter', 'pos_median') 
@@ -89,17 +171,15 @@ make_heatmap <- function(d, start_pos, tile_end, pos_WT, aa_WT, min_score=0,max_
     scale_fill_gradient2(name = "MAVE Score", midpoint = 0, low = "#830823", high = "#063264", mid = 'white', 
                          limits = c(min_score,max_score)) +
     
-    
-    #add WT markers. Lets try drawing black circles
-    geom_tile(data = WT, aes(x = pos_WT, y=aa_WT, fill = dummy), color = 'grey50') + #scale_color_manual(values = c("white")) +
-    geom_point(data = WT, aes(x = pos_WT, y=aa_WT), size = 3, color = 'black') +
-    
-    #this works but only displays x axis ticks every 10 positions
-    #xlab('pos')+ ylab('substitution') +
     #which x-axis ticks to draw. It seems I need to use 1 - tile_end as limits, otherwise it just displays no x-axis scale.
     #the labels and breaks are me trying to get it to display only labels between tile start and tile end, not all the way from 1. 
     scale_x_discrete(name ="pos", breaks=seq(start_pos,tile_end,1), labels=as.character(seq(start_pos,tile_end,1)), 
-                     limits=as.factor(seq(1,tile_end,1))) + ylab('substitution') +
+                     limits=as.factor(seq(1,tile_end,1))) +
+    
+    ylab('substitution') +
+    #add WT markers. Lets try drawing black circles
+    geom_tile(data = WT, aes(x = pos_WT, y=aa_WT, fill = dummy), color = 'grey50') + #scale_color_manual(values = c("white")) +
+    geom_point(data = WT, aes(x = pos_WT, y=aa_WT), size = 3, color = 'black') +
     
     #limit plot to from start of the tile to the end so we cut off all the part from 1 to start_tile
     coord_cartesian(xlim = c(start_pos,tile_end)) +
@@ -114,113 +194,19 @@ make_heatmap <- function(d, start_pos, tile_end, pos_WT, aa_WT, min_score=0,max_
   #print(p)
   #dev.off()
   
+  if(!x_axis) {
+    p <- p + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+
+  }
+  
+  
+  
   return(p)
   
 }
 
 
-#put all scores into one long df
-##########################
-#all_df <- data.frame()
-tile <- '1'
-
-all_df <- read.csv(paste0(base_dir,'tile', tile ,'_all_reps_minvarcount10',corr,'/tsv/tile',tile ,'_all_reps_exp/main_synonymous_scores.tsv'), 
-                          sep = '\t', header = F,
-                          stringsAsFactors = F, skip = 4,
-                          col.names = c('var', 'SE', 'epsilon', 'score'))
-
-
-for (tile in c('2','3','4','5')) {
-  print(c('tile', tile))
-
-  #we will use wt correction, except that we replaced wt counts with sy counts since the sy score is much closer to the 
-  #peak of the score distr (most vars behave similar to it). Therefore, all scores will be on the 'same' scale where 0 is 
-  #performance like wt/sy. Therefore, we do not need to read in more wt scores (they are all 0) or more sy scores (they are all NA because of our trick with replacing the wt counts with sy counts)
-  #therefore we skip 4 lines instead of 2 when reading in the other tiles
-  dat <- read.csv(paste0(base_dir,'tile', tile ,'_all_reps_minvarcount10',corr,'/tsv/tile',tile ,'_all_reps_exp/main_synonymous_scores.tsv'), 
-                  sep = '\t', header = F,
-                  stringsAsFactors = F, skip = 4,
-                  col.names = c('var', 'SE', 'epsilon', 'score'))
-  all_df <- rbind(all_df, dat)
-  
-}
-
-#necessary prep for making the all tiles map
-##################################
-
-#drop multi variants
-all_df <- all_df[!grepl(',',all_df$var, fixed = T),c('var','score')]
-
-#add position and sub
-all_df$pos <- as.numeric(str_extract(all_df$var, "([0-9]+)"))
-all_df$sub <- str_match(all_df$var, "[0-9]+([A-Za-z]+)")[,2]
-
-#to avoid problems later on, every sub can only occur once per position. This means I need to remove the overlapping vars, or pick one
-#or do the average
-#example: all_df[all_df$var == 'p.Asp153Ala',]
-
-#find combos of sub and position with two score values (becaues they were seen in multiple tiles)
-combos <- table(interaction(all_df$pos, all_df$sub))
-doubles <- combos[combos == 2]
-
-#calc the average between the two scores and replace them with that average score
-for (item in names(doubles)) {
-  
-  #print('\n\n')
-  #print(item)
-  
-  #split the name into the position and the subs so we can adress the relevant lines in the df
-  a <- strsplit(item, '.', fixed=T)
-  #test if we get the correct lines. Ok
-  #print(all_df[all_df$pos == as.numeric(a[[1]][[1]]) &  all_df$sub == a[[1]][[2]], ])
-  var_name <- unique(all_df[all_df$pos == as.numeric(a[[1]][[1]]) &  all_df$sub == a[[1]][[2]], c('var')])
-  #calc a mean over all scores observed for this sub and position (should only be 2 since a position is in max two different tiles)
-  mean_score <- mean(all_df[all_df$pos == as.numeric(a[[1]][[1]]) &  all_df$sub == a[[1]][[2]], c('score')])
-  #print(mean_score)
-  
-  #remove the rows and add a new one with the mean
-  all_df <- all_df[!(all_df$pos == as.numeric(a[[1]][[1]]) & all_df$sub == a[[1]][[2]]), ]
-  new_row <- data.frame(var=var_name,score=mean_score,pos=as.numeric(a[[1]][[1]]),sub= a[[1]][[2]]) 
-  #print('new_row is:')
-  #print(new_row)
-  all_df <- rbind(all_df, new_row)
-  #print(all_df[all_df$pos == as.numeric(a[[1]][[1]]) &  all_df$sub == a[[1]][[2]], ])
-}
-
-
-#position of the first residue
-start_pos <- 2
-#last position
-tile_end <- 187
-pos_WT <- seq(start_pos,tile_end,1)
-
-#this is the complete WT aa seq
-          #tile 1: 2 .. 36
-aa_WT <- c('Val','Gly','Ser','Leu','Asn','Cys','Ile','Val','Ala','Val','Ser','Gln','Asn','Met','Gly','Ile','Gly','Lys',
-           'Asn','Gly','Asp','Leu','Pro','Trp','Pro','Pro','Leu','Arg','Asn','Glu','Phe','Arg','Tyr','Phe','Gln',
-           #tile 2: 37 .. 72
-           'Arg', 'Met', 'Thr', 'Thr', 'Thr', 'Ser', 'Ser', 'Val', 'Glu', 'Gly', 'Lys', 'Gln', 'Asn', 'Leu',
-           'Val', 'Ile', 'Met', 'Gly', 'Lys', 'Lys', 'Thr', 'Trp', 'Phe', 'Ser', 'Ile', 'Pro', 'Glu', 'Lys', 
-           'Asn', 'Arg', 'Pro', 'Leu', 'Lys', 'Gly', 'Arg', 'Ile',
-           #gap from 73 .. 80
-           'Asn', 'Leu', 'Val', 'Leu', 'Ser', 'Arg', 'Glu', 'Leu',
-           #tile 3: 81 .. 116
-           'Lys', 'Glu', 'Pro', 'Pro', 'Gln', 'Gly', 'Ala', 'His', 'Phe', 'Leu', 'Ser', 'Arg', 'Ser', 'Leu', 'Asp',
-           'Asp', 'Ala', 'Leu', 'Lys', 'Leu', 'Thr', 'Glu', 'Gln', 'Pro', 'Glu', 'Leu', 'Ala', 'Asn', 'Lys', 'Val',
-           'Asp', 'Met', 'Val', 'Trp', 'Ile', 'Val',
-           #gap from 117 .. 118
-           'Gly', 'Gly', 
-           #tile 4: 119 .. 152
-           'Ser', 'Ser', 'Val', 'Tyr', 'Lys', 'Glu', 'Ala', 'Met', 'Asn', 'His', 'Pro', 'Gly',
-           'His', 'Leu', 'Lys', 'Leu', 'Phe', 'Val', 'Thr', 'Arg', 'Ile', 'Met', 'Gln', 'Asp', 'Phe', 'Glu', 'Ser',
-           'Asp', 'Thr', 'Phe', 'Phe', 'Pro', 'Glu', 'Ile', 'Asp', 'Leu', 'Glu', 'Lys',
-           #tile 5: 153 .. 187
-           'Tyr', 'Lys', 'Leu', 'Leu',
-           'Pro', 'Glu', 'Tyr', 'Pro', 'Gly', 'Val', 'Leu', 'Ser', 'Asp', 'Val', 'Gln', 'Glu', 'Glu', 'Lys', 'Gly',
-           'Ile', 'Lys', 'Tyr', 'Lys', 'Phe', 'Glu', 'Val', 'Tyr', 'Glu', 'Lys', 'Asn', 'Asp'
-           )
-
-
+#orig heatmap of all tiles
 p1 <- make_heatmap(d = all_df, start_pos =  start_pos, tile_end = tile_end, pos_WT =  pos_WT, aa_WT = aa_WT,
                    min_score = -2.5, max_score = 4.0,
                    descr = paste0("MAVE scores all tiles, 0 mismatch allowed, min base qual 1, average read qual 1",
@@ -228,8 +214,101 @@ p1 <- make_heatmap(d = all_df, start_pos =  start_pos, tile_end = tile_end, pos_
 
 p1
 
-png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_alltiles.minvarcount10',corr,'.png'), 
-    width = 3000, height = 800, res = 100)
-print(p1)
+#png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_alltiles.minvarcount10',corr,'.png'), 
+#    width = 3000, height = 800, res = 100)
+#print(p1)
+#dev.off()
+
+#heatmap of all tiles including vars scored only in two selection instead of 3. I got those by manually re-running enrich with only 2 
+#sels at a time and adding the vars to a copy of the all_df, called all_df_new
+p2 <- make_heatmap(d = all_df_new, start_pos =  start_pos, tile_end = tile_end, pos_WT =  pos_WT, aa_WT = aa_WT,
+                   min_score = -2.5, max_score = 4.0,
+                   descr = paste0("MAVE scores all tiles, including vars only scored in two replicates, 0 mismatch allowed, min base qual 1, average read qual 1",
+                                  "\nonly DNA vars with minimum 10 read counts, ", corr_descr, ", mid point: sy score = 0"))
+
+p2
+
+#add mtx and nad distance plots and arrange
+mtx_p <- ggplot(data = mtx_dist, aes(x=pos,y=MTXdist)) +
+  geom_line() +
+  scale_x_discrete(name ="pos", breaks=seq(start_pos,tile_end,1), labels=as.character(seq(start_pos,tile_end,1)), 
+                   limits=as.factor(seq(1,tile_end,1))) +
+  #limit the plot from 2 to 187 (omit the pos 1 in the plot but it still needs to be in the axis for scaling)
+  coord_cartesian(xlim = c(start_pos,tile_end)) +
+  theme_bw(base_size = 16) +
+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+
+mtx_p
+
+
+nad_p <- ggplot(data = nadph_dist, aes(x=pos,y=NADPHdist)) +
+  geom_line() +
+  scale_x_discrete(name ="pos", breaks=seq(start_pos,tile_end,1), labels=as.character(seq(start_pos,tile_end,1)), 
+                   limits=as.factor(seq(1,tile_end,1))) +
+  #limit the plot from 2 to 187 (omit the pos 1 in the plot but it still needs to be in the axis for scaling)
+  coord_cartesian(xlim = c(start_pos,tile_end)) +
+  theme_bw(base_size = 16) +
+  theme(axis.text=element_text(size=12), axis.title=element_text(size=18), legend.text=element_text(size=18), 
+        plot.title = element_text(size=22), axis.text.x = element_text(angle = 90))
+
+
+nad_p
+
+#adding plot of sse's
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+sse_p <- ggplot(dssp_dat, aes(x=pos,y=y,fill=SS)) +
+  geom_tile() +
+  scale_fill_manual(values=cbPalette) +
+  scale_x_discrete(name ="pos", breaks=seq(start_pos,tile_end,1), labels=as.character(seq(start_pos,tile_end,1)), 
+                   limits=as.factor(seq(1,tile_end,1))) +
+  #limit the plot from 2 to 187 (omit the pos 1 in the plot but it still needs to be in the axis for scaling)
+  coord_cartesian(xlim = c(start_pos,tile_end)) +
+  theme_bw(base_size = 16) +
+  theme(axis.text=element_text(size=12), axis.title=element_text(size=18), legend.text=element_text(size=18), 
+        plot.title = element_text(size=22), axis.text.x = element_text(angle = 90),
+        axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+
+sse_p
+
+#orig heatmap with dist plots
+png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_alltiles.minvarcount10',corr,'_dist_sse.png'), 
+    width = 4500, height = 1500, res = 120)
+ggarrange(
+  p1, sse_p, mtx_p, nad_p,
+  nrow = 4, ncol = 1, heights = c(5,1,1,1)
+)
 dev.off()
+
+#orig heatmap with dist plots
+png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_alltiles.minvarcount10',corr,'_dist.png'), 
+    width = 4500, height = 1500, res = 120)
+ggarrange(
+  p1, mtx_p, nad_p,
+  nrow = 3, ncol = 1, heights = c(5,1,1)
+)
+dev.off()
+
+
+#heatmap including the vars scored in only 2 selections, with dist plots
+png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_alltiles.minvarcount10',corr,'_plus2sels_dist.png'), 
+    width = 4500, height = 1500, res = 120)
+ggarrange(
+  p2, mtx_p, nad_p,
+  nrow = 3, ncol = 1, heights = c(5, 1,1)
+)
+dev.off()
+
+#heatmap including the vars scored in only 2 selections, with dist plots
+png(filename = paste0(base_dir,'HZ_plots/heatmaps/heatmap_alltiles.minvarcount10',corr,'_plus2sels_dist_sse.png'), 
+    width = 4500, height = 1500, res = 120)
+ggarrange(
+  p2, sse_p, mtx_p, nad_p,
+  nrow = 4, ncol = 1, heights = c(5,1,1,1)
+)
+dev.off()
+
+
+
+
+
 
