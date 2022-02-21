@@ -7,6 +7,7 @@ library(hash)
 
 base_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/results/enrich_full_dhfr/'
 plot_dir <- paste0(base_dir, 'HZ_plots/score_densities/')
+data_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/data/'
 
 #which correction was employed and what should written in the plot headers
 #the correction with the number of WT reads is default. It uses corr <- '' and corr_descr <- 'corrected with WT counts'.
@@ -65,6 +66,63 @@ make_tile_data <- function(){
 }
 h <- make_tile_data()
 
+################################################################
+#from the merged master data file
+################################################################
+
+all_df <- read.csv(paste0(data_dir, 'prism_merge_all_DHFR-human_P00374_04_02_2022.txt'), 
+                   sep = ' ', comment.char = '#', 
+                   col.names = c('var', 'ddE', 'sse', 'RSA', 'chainID', 'ddG', 'ddG_SE',
+                                 'MTXdist', 'NADPHdist', 'MAVE_SE', 'MAVE_score', 'tile',
+                                 'p_raw', 'p_bonf', 'scored_in','classification'))
+
+#1. plot distributions of MAVE scores
+############################
+#see below
+
+
+
+#2. plot distributions of standard errors per tile
+############################
+
+#per tile:
+for (t in c('1','2','3','4','5')) {
+  
+  p2 <- ggplot(subset(all_df, tile == t), aes(MAVE_SE)) +
+    geom_density(bw= 0.08) +
+    xlim(0, 0.85) +
+    ggtitle(paste0("Distribution of MAVE SE tile ", t, "\ncorrected with synonymous counts")) +
+    xlab('Bandwidth = 0.08') +
+    theme_bw(base_size = 20) + theme(legend.position="bottom")
+  p2
+  
+  png(filename = paste0(plot_dir,'error_tile',t,'.png'),width = 800, height = 600)
+  print(p2)
+  dev.off()
+  
+}
+
+
+#together
+p1 <- ggplot(all_df, aes(MAVE_SE,color=tile)) +
+  geom_density(bw= 0.08, alpha = 0.5) +
+  ggtitle(paste0("Errors per tile, min DNA var count 10")) +
+  xlab('Bandwidth = 0.08') +
+  theme_bw(base_size = 20) + theme(legend.position="bottom")
+
+p1
+png(filename = paste0(plot_dir,'alltiles.error.png'),width = 800, height = 600)
+print(p1)
+dev.off()
+
+
+
+
+
+################################################################
+#directly from raw data. Can switch to different corretions
+################################################################
+
 #plot distributions of standard errors per tile
 ############################
 
@@ -72,7 +130,7 @@ h <- make_tile_data()
 for (tile in c('1','2','3','4','5')) {
   print(c('tile', tile))
 
-  dat10 <- read.csv(paste0(base_dir,'tile', tile ,'_all_reps_minvarcount10/tsv/tile',tile ,'_all_reps_exp/main_synonymous_scores.tsv'), 
+  dat10 <- read.csv(paste0(base_dir,'tile', tile ,'_all_reps_minvarcount10', corr,'/tsv/tile',tile ,'_all_reps_exp/main_synonymous_scores.tsv'), 
                     sep = '\t', header = F,
                     stringsAsFactors = F, skip = 2,
                     col.names = c('var', 'SE', 'epsilon', 'score'))
@@ -299,7 +357,7 @@ for (tile in c('1','2','3','4','5')) {
     geom_vline(aes(xintercept = syn_score, colour='Synonymous score'), linetype = 'dashed') +
     #according to https://stackoverflow.com/questions/39112735/using-colors-in-aes-function-in-ggplot2 one can use scale_color_manual to choose colors
     #need to specify a color for each aes mapping. 1-4 are the number of mutations, 'WT score' and "Synonymous score" have been named so by the two geom_vline calls above
-    scale_colour_manual(values = c('1'='coral2', '2'= 'steelblue1', '3'='darkolivegreen3', 
+    scale_color_manual(values = c('1'='coral2', '2'= 'steelblue1', '3'='darkolivegreen3', 
                                    '4'='darkorchid2',"WT score" = "black", "Synonymous score" = "grey50")) +
   
     ggtitle(paste0("tile ", tile, " Reseq MAVE scores, min DNA var count 10,\n", corr_descr, 
@@ -352,4 +410,20 @@ dev.off()
 #can also use density() function and then call plot o nthe result, but ggplot is more easily customizable
 #MTX_single.density <- density(MTX_single$MTX_score_old, bw = 0.08)
 #plot(MTX_single.density, main = paste0("MXT: single aa substitution MAVE scores. First sequencing. # vars: ",nrow(MTX_single)))
+
+#MAVE score distributions of different selections
+###########################################
+
+#how much do they overlap or are shifted?
+#though I think there was something written in the enrich paper that they weigh the different selections differently
+#"We there-
+#fore implemented a random-effects model that estimates
+#each variant’s score based on the distribution of that
+#variant’s scores across all replicates."
+#"variant scores can vary widely between replicates"
+
+#-> so this is known. The same variant can score v differently in different replicates and the only thing we can do about it
+#is include a proper error estimation that takes into account the errors of the selection level scores and tells us to be very 
+#wary of the experiment level score if the replicate/selection scores were very differnt because then it will be huge
+
 
