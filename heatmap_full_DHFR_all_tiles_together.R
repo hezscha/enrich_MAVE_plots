@@ -16,50 +16,88 @@ data_dir <- '/home/henrike/Documents/PD_AS/projects/Sofie_Mave/data/'
 corr_descr <- 'corrected with synonymous counts' 
 corr <- '_corr_sy'
 
+#dict to translate 1 letter aa code to 3 letters
+make_aa_hash <- function(){
+  aa_1_to_3 <- hash()
+  aa_1_to_3[["A"]] <- 'Ala'
+  aa_1_to_3[["C"]] <- 'Cys'
+  aa_1_to_3[["D"]] <- 'Asp'
+  aa_1_to_3[["E"]] <- 'Glu'
+  aa_1_to_3[["F"]] <- 'Phe'
+  aa_1_to_3[["G"]] <- 'Gly'
+  aa_1_to_3[["H"]] <- 'His'
+  aa_1_to_3[["I"]] <- 'Ile'
+  aa_1_to_3[["K"]] <- 'Lys'
+  aa_1_to_3[["L"]] <- 'Leu'
+  aa_1_to_3[["M"]] <- 'Met'
+  aa_1_to_3[["N"]] <- 'Asn'
+  aa_1_to_3[["P"]] <- 'Pro'
+  aa_1_to_3[["Q"]] <- 'Gln'
+  aa_1_to_3[["R"]] <- 'Arg'
+  aa_1_to_3[["S"]] <- 'Ser'
+  aa_1_to_3[["T"]] <- 'Thr'
+  aa_1_to_3[["V"]] <- 'Val'
+  aa_1_to_3[["W"]] <- 'Trp'
+  aa_1_to_3[["Y"]] <- 'Tyr'
+  aa_1_to_3[["*"]] <- 'Ter'
+  return(aa_1_to_3)
+}
+aa_1_to_3 <- make_aa_hash()
+
 #load prepared data
 ########################
 
-all_df <- read.csv(paste0(base_dir, 'combined_R_dataframes/', 'all_tile_scores_long.csv'), 
+all_df <- read.csv(paste0(data_dir, 'full_MAVE_data.csv'), 
                    sep = ',')
+
+#add the 3 letter code for the substitution
+all_df$sub_3letter <- sapply(all_df$sub, function(i) aa_1_to_3[[i]])
+#cast to char, it is some weird list type right now
+all_df$sub_3letter <- as.character(all_df$sub_3letter)
+
+#do I need this in order to plot sse???
+all_df$y <- rep(1,nrow(all_df))
+all_df$sse <- ifelse(is.na(all_df$sse), '-', all_df$sse)
 
 #all_df including the vars only scored in two selections instead of 3
-all_df_new <- read.csv(paste0(base_dir, 'combined_R_dataframes/', 'all_tile_scores_long_plus2sels.csv'), 
-                   sep = ',')
+#all_df_new <- read.csv(paste0(base_dir, 'combined_R_dataframes/', 'all_tile_scores_long_plus2sels.csv'), 
+#                   sep = ',')
 
-#load distance data
-########################
-mtx_dist <- read.csv(paste0(data_dir,'1u72_dist_to_MTX.dat'), 
-                     sep = '\t', header = F,
-                     col.names = c('pos_raw','chain', 'WTres', 'MTXdist'))
-
-#put in correct position starting from 2
-mtx_dist$pos <- mtx_dist$pos_raw+1
-
-#remove distances of waters (empty residue field)
-#mtx_dist <- mtx_dist[complete.cases(mtx_dist),]
-mtx_dist <- mtx_dist[mtx_dist$WTres != '',]
-#mtx_dist$molecule <- rep('MTX', nrow(mtx_dist))
-
-nadph_dist <- read.csv(paste0(data_dir,'1u72_dist_to_NDP.dat'), 
-                       sep = '\t', header = F,
-                       col.names = c('pos_raw','chain', 'WTres', 'NADPHdist'))
-
-#put in correct position starting from 2
-nadph_dist$pos <- nadph_dist$pos_raw+1
-
-#remove distances of waters (empty residue field)
-#nadph_dist <- nadph_dist[complete.cases(nadph_dist),]
-nadph_dist <- nadph_dist[nadph_dist$WTres != '',]
-#nadph_dist$molecule <- rep('NADPH', nrow(nadph_dist))
-
-#adding secondary structure elements
-###############################
-
-dssp_dat <- read.csv(paste0(data_dir,'prism_dssp_DHFR_P00374_1u72_parsed.txt'), 
-                     sep = ' ', header = T, comment.char = '#')
-dssp_dat$pos <- seq(start_pos,tile_end)
-#do I need this in order to plot???
-dssp_dat$y <- rep(1,nrow(dssp_dat))
+#not necessary anymore since I use the merged data
+# #load distance data
+# ########################
+# mtx_dist <- read.csv(paste0(data_dir,'1u72_dist_to_MTX.dat'), 
+#                      sep = '\t', header = F,
+#                      col.names = c('pos_raw','chain', 'WTres', 'MTXdist'))
+# 
+# #put in correct position starting from 2
+# mtx_dist$pos <- mtx_dist$pos_raw+1
+# 
+# #remove distances of waters (empty residue field)
+# #mtx_dist <- mtx_dist[complete.cases(mtx_dist),]
+# mtx_dist <- mtx_dist[mtx_dist$WTres != '',]
+# #mtx_dist$molecule <- rep('MTX', nrow(mtx_dist))
+# 
+# nadph_dist <- read.csv(paste0(data_dir,'1u72_dist_to_NDP.dat'), 
+#                        sep = '\t', header = F,
+#                        col.names = c('pos_raw','chain', 'WTres', 'NADPHdist'))
+# 
+# #put in correct position starting from 2
+# nadph_dist$pos <- nadph_dist$pos_raw+1
+# 
+# #remove distances of waters (empty residue field)
+# #nadph_dist <- nadph_dist[complete.cases(nadph_dist),]
+# nadph_dist <- nadph_dist[nadph_dist$WTres != '',]
+# #nadph_dist$molecule <- rep('NADPH', nrow(nadph_dist))
+# 
+# #adding secondary structure elements
+# ###############################
+# 
+# dssp_dat <- read.csv(paste0(data_dir,'prism_dssp_DHFR_P00374_1u72_parsed.txt'), 
+#                      sep = ' ', header = T, comment.char = '#')
+# dssp_dat$pos <- seq(start_pos,tile_end)
+# #do I need this in order to plot???
+# dssp_dat$y <- rep(1,nrow(dssp_dat))
 
 #define the WT to mark in the heatmap
 ####################################
@@ -126,7 +164,7 @@ make_heatmap <- function(d, start_pos, tile_end, pos_WT, aa_WT, min_score=0,max_
   d <- arrange(d, pos)
   
   #cast into matrix format
-  mat <- dcast(d, pos ~ sub, value.var = "score")
+  mat <- dcast(d, pos ~ sub_3letter, value.var = "MAVE_score")
   rownames(mat) <- mat$pos
   #remove pos column
   mat <- mat[,-c(1)]
@@ -150,9 +188,9 @@ make_heatmap <- function(d, start_pos, tile_end, pos_WT, aa_WT, min_score=0,max_
   WT <- data.frame(pos_WT, aa_WT, dummy)
   
   if (min_score == 0)
-  {min_score <- min(d$score, na.rm = T) - 0.1}
+  {min_score <- min(d$MAVE_score, na.rm = T) - 0.1}
   if (max_score == 0)
-  {max_score <- max(d$score, na.rm = T) + 0.1}
+  {max_score <- max(d$MAVE_score, na.rm = T) + 0.1}
   
   print(paste0('min_score is: ', min_score))
   print(paste0('max_score is: ', max_score))
@@ -206,8 +244,8 @@ make_heatmap <- function(d, start_pos, tile_end, pos_WT, aa_WT, min_score=0,max_
 }
 
 
-#orig heatmap of all tiles
-p1 <- make_heatmap(d = all_df, start_pos =  start_pos, tile_end = tile_end, pos_WT =  pos_WT, aa_WT = aa_WT,
+#orig heatmap of all tiles, only considering vars scored in all 3 selections
+p1 <- make_heatmap(d = all_df[all_df$scored_in == 3,c('var', 'MAVE_score', 'pos', 'sub_3letter')], start_pos =  start_pos, tile_end = tile_end, pos_WT =  pos_WT, aa_WT = aa_WT,
                    min_score = -2.5, max_score = 4.0,
                    descr = paste0("MAVE scores all tiles, 0 mismatch allowed, min base qual 1, average read qual 1",
                                   "\nonly DNA vars with minimum 10 read counts, ", corr_descr, ", mid point: sy score = 0"))
@@ -221,7 +259,7 @@ p1
 
 #heatmap of all tiles including vars scored only in two selection instead of 3. I got those by manually re-running enrich with only 2 
 #sels at a time and adding the vars to a copy of the all_df, called all_df_new
-p2 <- make_heatmap(d = all_df_new, start_pos =  start_pos, tile_end = tile_end, pos_WT =  pos_WT, aa_WT = aa_WT,
+p2 <- make_heatmap(d = all_df[,c('var', 'MAVE_score', 'pos', 'sub_3letter')], start_pos =  start_pos, tile_end = tile_end, pos_WT =  pos_WT, aa_WT = aa_WT,
                    min_score = -2.5, max_score = 4.0,
                    descr = paste0("MAVE scores all tiles, including vars only scored in two replicates, 0 mismatch allowed, min base qual 1, average read qual 1",
                                   "\nonly DNA vars with minimum 10 read counts, ", corr_descr, ", mid point: sy score = 0"))
@@ -229,7 +267,7 @@ p2 <- make_heatmap(d = all_df_new, start_pos =  start_pos, tile_end = tile_end, 
 p2
 
 #add mtx and nad distance plots and arrange
-mtx_p <- ggplot(data = mtx_dist, aes(x=pos,y=MTXdist)) +
+mtx_p <- ggplot(data = all_df, aes(x=pos,y=MTXdist)) +
   geom_line() +
   scale_x_discrete(name ="pos", breaks=seq(start_pos,tile_end,1), labels=as.character(seq(start_pos,tile_end,1)), 
                    limits=as.factor(seq(1,tile_end,1))) +
@@ -241,7 +279,7 @@ mtx_p <- ggplot(data = mtx_dist, aes(x=pos,y=MTXdist)) +
 mtx_p
 
 
-nad_p <- ggplot(data = nadph_dist, aes(x=pos,y=NADPHdist)) +
+nad_p <- ggplot(data = all_df, aes(x=pos,y=NADPHdist)) +
   geom_line() +
   scale_x_discrete(name ="pos", breaks=seq(start_pos,tile_end,1), labels=as.character(seq(start_pos,tile_end,1)), 
                    limits=as.factor(seq(1,tile_end,1))) +
@@ -256,7 +294,7 @@ nad_p
 
 #adding plot of sse's
 cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-sse_p <- ggplot(dssp_dat, aes(x=pos,y=y,fill=SS)) +
+sse_p <- ggplot(all_df, aes(x=pos,y=y,fill=sse)) +
   geom_tile() +
   scale_fill_manual(values=cbPalette) +
   scale_x_discrete(name ="pos", breaks=seq(start_pos,tile_end,1), labels=as.character(seq(start_pos,tile_end,1)), 
